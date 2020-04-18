@@ -225,9 +225,54 @@ var controller = {
                 status: 'success',
                 article: articleRemoved
             });
-            
+
         });
 
+    },
+    
+    upload: (req,res) => {
+
+        // Configurar módulo de connect multiparty router/article_route.js
+
+        // Recoger el fichero de la petición
+        var file_name = 'Imagen no subida..';
+
+        if(!req.files) {
+            return res.status(404).send({
+                status: 'error',
+                message: file_name
+            });
+        }
+
+        // Conseguir nombre y la extensión del archivo
+        var file_path = req.files.file0.path;
+        var file_split =  file_path.split('\\');
+
+        // * ADVERTENCIA * en linux o mac
+        // var file_split =  file_path.split('/');
+        var file_name = file_split[2];
+
+        // Extensión del fichero
+        var extension_split = file_name.split('\.');
+        var file_ext = extension_split[1];
+
+        // Comprobar la extensión, solo imagenes, si es valida borrar el fichero
+        if (file_ext != 'png' && file_ext != 'jpg' && file_ext != 'jpeg' && file_ext != 'gif'){
+            // Borrar el archivo subido
+            
+        }else{
+
+            // Si todo es valido
+
+            // Buscar el articulo, asignarle el nombre de la imagen y actualizarlo
+
+        }
+
+        return res.status(200).send({
+            fichero: req.files,
+            split: file_split,
+            file_ext 
+        });
     }//Aqui abajo agregar nueva función
 
 
