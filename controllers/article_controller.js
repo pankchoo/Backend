@@ -114,7 +114,7 @@ var controller = {
     getArticle: (req,res) => {
         // Recoger id de la URL
         var articleId = req.params.id
-        console.log(articleId)
+        // console.log(articleId)
 
         // Comprobar que existe
         if (!articleId || articleId == null){
@@ -149,7 +149,88 @@ var controller = {
         })
 
         
-    }
+    },
+    
+    update: (req,res) => {
+        
+        // Recoger el id del articulo por la url
+        var articleId = req.params.id
+
+        // Recoger params de peticion PUT
+        var params = req.body;
+
+        // Validar
+        try {
+            var validate_titulo = !validator.isEmpty(params.title);
+            var validate_content = !validator.isEmpty(params.content);
+        } catch (error) {
+            return res.status(404).send({
+                status: 'error',
+                message: "Faltan datos por enviar !!"
+            });
+        }
+
+        if (validate_titulo && validate_content){
+            // Find and update
+            Article.findOneAndUpdate({_id: articleId}, params, {new:true}, (err,articlueUpdated) => {
+                
+                if(err){
+                    return res.status(500).send({
+                        status: 'error',
+                        message: "Error al actualizar !!"
+                    });
+                }
+
+                if(!articlueUpdated){
+                    return res.status(404).send({
+                        status: 'error',
+                        message: "No existe el artículo !!"
+                    });
+                }
+                // respuesta JSON
+                return res.status(200).send({
+                    status: 'success',
+                    article: articlueUpdated
+                });
+            });
+        }else{
+            return res.status(200).send({
+                status: 'error',
+                message: "La validacion no es correcta !!"
+            });
+        }
+
+    },
+    
+    delete: (req,res) => {
+        // Recoger el id de la URL
+        var articleId = req.params.id
+        // Find and delete
+        Article.findOneAndDelete({_id: articleId}, (err, articleRemoved) => {
+            if (err) {
+                return res.status(500).send({
+                    status: 'error',
+                    message: "Error al borrar !!"
+                });
+            }
+
+            if(!articleRemoved){
+                return res.status(404).send({
+                    status: 'error',
+                    message: "No se ha borrado el artículo, talvez no exista !!"
+                });
+            }
+
+            return res.status(200).send({
+                status: 'success',
+                article: articleRemoved
+            });
+            
+        });
+
+    }//Aqui abajo agregar nueva función
+
+
 }; //fin controller
 
 module.exports = controller;
