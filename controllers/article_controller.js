@@ -1,6 +1,9 @@
 'use strict'
 var validator = require('validator');
 var Article = require('../models/article_model');
+// para eliminar archivos de nuestro sistema de ficheros
+var fs = require('fs');
+var path = require('path');
 
 var controller = {
 
@@ -172,7 +175,7 @@ var controller = {
 
         if (validate_titulo && validate_content){
             // Find and update
-            Article.findOneAndUpdate({_id: articleId}, params, {new:true}, (err,articlueUpdated) => {
+            Article.findOneAndUpdate({_id: articleId}, params, {new:true}, (err,articleUpdated) => {
                 
                 if(err){
                     return res.status(500).send({
@@ -181,7 +184,7 @@ var controller = {
                     });
                 }
 
-                if(!articlueUpdated){
+                if(!articleUpdated){
                     return res.status(404).send({
                         status: 'error',
                         message: "No existe el artículo !!"
@@ -190,7 +193,7 @@ var controller = {
                 // respuesta JSON
                 return res.status(200).send({
                     status: 'success',
-                    article: articlueUpdated
+                    article: articleUpdated
                 });
             });
         }else{
@@ -259,20 +262,98 @@ var controller = {
         // Comprobar la extensión, solo imagenes, si es valida borrar el fichero
         if (file_ext != 'png' && file_ext != 'jpg' && file_ext != 'jpeg' && file_ext != 'gif'){
             // Borrar el archivo subido
-            
+            fs.unlink(file_path, (err) => {
+                return res.status(200).send({
+                    status: 'error',
+                    message: 'la extensión de la imagen no es válida !!'
+                });
+            });
         }else{
 
             // Si todo es valido
+            var articleId = req.params.id;
 
             // Buscar el articulo, asignarle el nombre de la imagen y actualizarlo
-
+            Article.findOneAndUpdate(
+                {_id: articleId},
+                {image: file_name},
+                {new:true},
+                (err, articleUpdated) => {
+                    
+                    if (err || !articleUpdated) {
+                        return res.status(200).send({
+                            status: 'error',
+                            message: 'Error al guardar la imagen del artículo !!'
+                        });
+                    }
+                    
+                    return res.status(200).send({
+                        status: 'success',
+                        article: articleUpdated
+                    });
+                }
+                );
         }
 
-        return res.status(200).send({
-            fichero: req.files,
-            split: file_split,
-            file_ext 
+        
+    },
+    
+    getImage: (req,res) => {
+        var file = req.params.image;
+        var path_file = './upload/articles/'+file;
+
+        fs.exists(path_file,(exists) => {
+            if(exists){
+                return res.sendFile(path.resolve(path_file));
+            }else{
+                return res.status(404).send({
+                    status: 'error',
+                    message: 'La imagen no existe !!'
+                });
+            }
         });
+    },
+    
+    search: (req,res) => {
+        // Sacar el string a buscar 
+        var searchString = req.params.search;
+
+        // Find or SI EL searchString está ("i") incluido en el titulo lo retorna OR ("i") incluido en el content. SORT ordena datos por filtros en el array, y exec devuelve datos
+        Article.find(
+            {
+                "$or": [
+                    { 
+                        "title": { "$regex": searchString, "$options": "i"}
+                    },
+                    { 
+                        "content": { "$regex": searchString, "$options": "i"}
+                    }
+                ]
+            }
+        )
+        .sort([['date', 'descending']])
+        .exec((err, articles)=>{
+
+            if(err) {
+                return res.status(500).send({
+                    status: 'error',
+                    message: 'Error en la peticion !!'
+                })
+            }
+            
+            if(!articles || articles.length <=0) {
+                return res.status(404).send({
+                    status: 'error',
+                    message: 'No hay artículos para mostrar !!'
+                });
+            }
+
+            return res.status(200).send({
+                status: 'success',
+                articles
+            });
+        });
+        
     }//Aqui abajo agregar nueva función
 
 
